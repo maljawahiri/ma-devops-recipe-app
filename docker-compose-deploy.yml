@@ -7,6 +7,7 @@ services:
     restart: always
     volumes:
       - static-data:/vol/web
+      - media-data:/vol/web/media
     environment:
       - DB_HOST=db
       - DB_NAME=${DB_NAME}
@@ -37,7 +38,14 @@ services:
       - 80:8000
     volumes:
       - static-data:/vol/static
+      - media-data:/vol/web/media
 
 volumes:
   postgres-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ../data/deploy/db
   static-data:
+  media-data:
