@@ -177,3 +177,50 @@ set -e
 
 envsubst < /etc/nginx/default.conf.tpl > /etc/nginx/conf.d/default.conf
 nginx -g 'daemon off;'
+
+>
+
+running 
+docker compose -f docker-compose-deploy.yml build
+docker compose -f docker-compose-deploy.yml up -d
+finally shows all services running but still when I try to open app at:
+http://localhost/
+I get
+Bad Request (400)
+
+I see in app logs:
+
+2025-01-18 21:12:13 2025/01/18 20:12:13 [notice] 8#8: using the "epoll" event method
+2025-01-18 21:12:13 2025/01/18 20:12:13 [notice] 8#8: nginx/1.27.3
+2025-01-18 21:12:13 2025/01/18 20:12:13 [notice] 8#8: built by gcc 13.2.1 20240309 (Alpine 13.2.1_git20240309) 
+2025-01-18 21:12:13 2025/01/18 20:12:13 [notice] 8#8: OS: Linux 5.15.133.1-microsoft-standard-WSL2
+2025-01-18 21:12:13 2025/01/18 20:12:13 [notice] 8#8: getrlimit(RLIMIT_NOFILE): 1048576:1048576
+2025-01-18 21:12:13 2025/01/18 20:12:13 [notice] 8#8: start worker processes
+2025-01-18 21:12:13 2025/01/18 20:12:13 [notice] 8#8: start worker process 9
+2025-01-18 21:12:13 2025/01/18 20:12:13 [notice] 8#8: start worker process 10
+2025-01-18 21:12:13 2025/01/18 20:12:13 [notice] 8#8: start worker process 11
+2025-01-18 21:12:13 2025/01/18 20:12:13 [notice] 8#8: start worker process 12
+2025-01-18 21:12:13 2025/01/18 20:12:13 [notice] 8#8: start worker process 13
+2025-01-18 21:12:13 2025/01/18 20:12:13 [notice] 8#8: start worker process 14
+2025-01-18 21:12:13 2025/01/18 20:12:13 [notice] 8#8: start worker process 15
+2025-01-18 21:12:13 2025/01/18 20:12:13 [notice] 8#8: start worker process 16
+2025-01-18 21:14:15 172.25.0.1 - - [18/Jan/2025:20:14:15 +0000] "GET / HTTP/1.1" 400 154 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0" "-"
+2025-01-18 21:14:15 172.25.0.1 - - [18/Jan/2025:20:14:15 +0000] "GET /favicon.ico HTTP/1.1" 400 154 "http://localhost/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0" "-"
+
+In proxy logs:
+2025-01-18 21:12:13 2025/01/18 20:12:13 [notice] 8#8: using the "epoll" event method
+2025-01-18 21:12:13 2025/01/18 20:12:13 [notice] 8#8: nginx/1.27.3
+2025-01-18 21:12:13 2025/01/18 20:12:13 [notice] 8#8: built by gcc 13.2.1 20240309 (Alpine 13.2.1_git20240309) 
+2025-01-18 21:12:13 2025/01/18 20:12:13 [notice] 8#8: OS: Linux 5.15.133.1-microsoft-standard-WSL2
+2025-01-18 21:12:13 2025/01/18 20:12:13 [notice] 8#8: getrlimit(RLIMIT_NOFILE): 1048576:1048576
+2025-01-18 21:12:13 2025/01/18 20:12:13 [notice] 8#8: start worker processes
+2025-01-18 21:12:13 2025/01/18 20:12:13 [notice] 8#8: start worker process 9
+2025-01-18 21:12:13 2025/01/18 20:12:13 [notice] 8#8: start worker process 10
+2025-01-18 21:12:13 2025/01/18 20:12:13 [notice] 8#8: start worker process 11
+2025-01-18 21:12:13 2025/01/18 20:12:13 [notice] 8#8: start worker process 12
+2025-01-18 21:12:13 2025/01/18 20:12:13 [notice] 8#8: start worker process 13
+2025-01-18 21:12:13 2025/01/18 20:12:13 [notice] 8#8: start worker process 14
+2025-01-18 21:12:13 2025/01/18 20:12:13 [notice] 8#8: start worker process 15
+2025-01-18 21:12:13 2025/01/18 20:12:13 [notice] 8#8: start worker process 16
+2025-01-18 21:14:15 172.25.0.1 - - [18/Jan/2025:20:14:15 +0000] "GET / HTTP/1.1" 400 154 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0" "-"
+2025-01-18 21:14:15 172.25.0.1 - - [18/Jan/2025:20:14:15 +0000] "GET /favicon.ico HTTP/1.1" 400 154 "http://localhost/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0" "-"
