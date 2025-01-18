@@ -5,8 +5,10 @@ services:
     build:
       context: .
     restart: always
+    ports:
+      - 9000:9000
     volumes:
-      - static-data:/vol/web
+      - static-data:/vol/web/static
       - media-data:/vol/web/media
     environment:
       - DB_HOST=db
@@ -38,7 +40,7 @@ services:
       - 80:8000
     volumes:
       - static-data:/vol/static
-      - media-data:/vol/web/media
+      - media-data:/vol/media
 
 volumes:
   postgres-data:
