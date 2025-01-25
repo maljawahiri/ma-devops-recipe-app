@@ -134,7 +134,7 @@ if there are vars with $ which are not supposed to be replaced use:
 >
 
 create S3 bucket
-ma-devops-recipe-app-tf-state
+ma-devops-recipe-app-us-east-1-tf-state
 create DynnamoDB table to lock S3 file
 ma-devops-recipe-app-tf-lock
 Partition key
@@ -151,3 +151,6 @@ aws-vault exec research_user1 --duration=1h
 docker compose run --rm terraform -chdir=setup init
 
 git tag 05_35-initialise_setup_terraform
+
+git tag 05_35_02-initialise_setup_terraform
+

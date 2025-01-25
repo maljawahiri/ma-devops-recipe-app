@@ -1,6 +1,6 @@
 variable "tf_state_bucket" {
   description = "Name of S3 bucket in AWS for storing TF state"
-  default     = "ma-devops-recipe-app-tf-state"
+  default     = "ma-devops-recipe-app-us-east-1-tf-state"
 }
 
 variable "tf_state_lock_table" {
