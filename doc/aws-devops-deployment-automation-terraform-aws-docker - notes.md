@@ -149,3 +149,5 @@ https://registry.terraform.io/providers/hashicorp/aws/latest
 aws-vault list
 aws-vault exec research_user1 --duration=1h
 docker compose run --rm terraform -chdir=setup init
+
+git tag 05_35-initialise_setup_terraform
