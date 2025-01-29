@@ -224,3 +224,230 @@ In proxy logs:
 2025-01-18 21:12:13 2025/01/18 20:12:13 [notice] 8#8: start worker process 16
 2025-01-18 21:14:15 172.25.0.1 - - [18/Jan/2025:20:14:15 +0000] "GET / HTTP/1.1" 400 154 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0" "-"
 2025-01-18 21:14:15 172.25.0.1 - - [18/Jan/2025:20:14:15 +0000] "GET /favicon.ico HTTP/1.1" 400 154 "http://localhost/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0" "-"
+
+___
+
+using Python 3.12 on Windows 10
+given 
+=requirements.txt=
+Django>=4.0.4,<4.1
+djangorestframework>=3.13.1,<3.14
+psycopg2>=2.9.3,<2.10
+drf-spectacular>=0.22.1,<0.23
+Pillow>=9.1.0,<9.2
+gunicorn>=21.2.0,<21.3
+
+virtualenv .venv
+In Git Bash:
+source .venv/Scripts/activate
+pip install -r requirements.txt
+...
+
+  Traceback (most recent call last):
+    File "<string>", line 989, in <module>
+    File "C:\Users\Marcin\AppData\Local\Temp\pip-build-env-i9ce0c14\overlay\Lib\site-packages\setuptools\__init__.py", line 117, in setup
+      return distutils.core.setup(**attrs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "C:\Users\Marcin\AppData\Local\Temp\pip-build-env-i9ce0c14\overlay\Lib\site-packages\setuptools\_distutils\core.py", line 186, in setup
+      return run_commands(dist)
+             ^^^^^^^^^^^^^^^^^^
+    File "C:\Users\Marcin\AppData\Local\Temp\pip-build-env-i9ce0c14\overlay\Lib\site-packages\setuptools\_distutils\core.py", line 202, in run_commands
+      dist.run_commands()
+    File "C:\Users\Marcin\AppData\Local\Temp\pip-build-env-i9ce0c14\overlay\Lib\site-packages\setuptools\_distutils\dist.py", line 983, in run_commands
+      self.run_command(cmd)
+    File "C:\Users\Marcin\AppData\Local\Temp\pip-build-env-i9ce0c14\overlay\Lib\site-packages\setuptools\dist.py", line 999, in run_command
+      super().run_command(command)
+    File "C:\Users\Marcin\AppData\Local\Temp\pip-build-env-i9ce0c14\overlay\Lib\site-packages\setuptools\_distutils\dist.py", line 1002, in run_command
+      cmd_obj.run()
+    File "C:\Users\Marcin\AppData\Local\Temp\pip-build-env-i9ce0c14\overlay\Lib\site-packages\setuptools\command\bdist_wheel.py", line 379, in run
+      self.run_command("build")
+    File "C:\Users\Marcin\AppData\Local\Temp\pip-build-env-i9ce0c14\overlay\Lib\site-packages\setuptools\_distutils\cmd.py", line 339, in run_command
+      self.distribution.run_command(command)
+    File "C:\Users\Marcin\AppData\Local\Temp\pip-build-env-i9ce0c14\overlay\Lib\site-packages\setuptools\dist.py", line 999, in run_command
+      super().run_command(command)
+    File "C:\Users\Marcin\AppData\Local\Temp\pip-build-env-i9ce0c14\overlay\Lib\site-packages\setuptools\_distutils\dist.py", line 1002, in run_command
+      cmd_obj.run()
+    File "C:\Users\Marcin\AppData\Local\Temp\pip-build-env-i9ce0c14\overlay\Lib\site-packages\setuptools\_distutils\command\build.py", line 136, in run
+      self.run_command(cmd_name)
+    File "C:\Users\Marcin\AppData\Local\Temp\pip-build-env-i9ce0c14\overlay\Lib\site-packages\setuptools\_distutils\cmd.py", line 339, in run_command
+      self.distribution.run_command(command)
+    File "C:\Users\Marcin\AppData\Local\Temp\pip-build-env-i9ce0c14\overlay\Lib\site-packages\setuptools\dist.py", line 999, in run_command
+      super().run_command(command)
+    File "C:\Users\Marcin\AppData\Local\Temp\pip-build-env-i9ce0c14\overlay\Lib\site-packages\setuptools\_distutils\dist.py", line 1002, in run_command
+      cmd_obj.run()
+    File "C:\Users\Marcin\AppData\Local\Temp\pip-build-env-i9ce0c14\overlay\Lib\site-packages\setuptools\command\build_ext.py", line 99, in run
+      _build_ext.run(self)
+    File "C:\Users\Marcin\AppData\Local\Temp\pip-build-env-i9ce0c14\overlay\Lib\site-packages\setuptools\_distutils\command\build_ext.py", line 365, in run
+      self.build_extensions()
+    File "<string>", line 804, in build_extensions
+  RequiredDependencyException: zlib
+  
+  During handling of the above exception, another exception occurred:
+  
+  Traceback (most recent call last):
+    File "D:\usr\src\training\aws\aws-devops-deployment-automation-terraform-aws-docker\src\ma-devops-recipe-app\.venv\Lib\site-packages\pip\_vendor\pyproject_hooks\_in_process\_in_process.py", line 353, in <module>
+      main()
+    File "D:\usr\src\training\aws\aws-devops-deployment-automation-terraform-aws-docker\src\ma-devops-recipe-app\.venv\Lib\site-packages\pip\_vendor\pyproject_hooks\_in_process\_in_process.py", line 335, in main
+      json_out['return_val'] = hook(**hook_input['kwargs'])
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "D:\usr\src\training\aws\aws-devops-deployment-automation-terraform-aws-docker\src\ma-devops-recipe-app\.venv\Lib\site-packages\pip\_vendor\pyproject_hooks\_in_process\_in_process.py", line 251, in build_wheel
+      return _build_backend().build_wheel(wheel_directory, config_settings,
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "C:\Users\Marcin\AppData\Local\Temp\pip-build-env-i9ce0c14\overlay\Lib\site-packages\setuptools\build_meta.py", line 438, in build_wheel
+      return _build(['bdist_wheel', '--dist-info-dir', str(metadata_directory)])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "C:\Users\Marcin\AppData\Local\Temp\pip-build-env-i9ce0c14\overlay\Lib\site-packages\setuptools\build_meta.py", line 426, in _build
+      return self._build_with_temp_dir(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "C:\Users\Marcin\AppData\Local\Temp\pip-build-env-i9ce0c14\overlay\Lib\site-packages\setuptools\build_meta.py", line 407, in _build_with_temp_dir
+      self.run_setup()
+    File "C:\Users\Marcin\AppData\Local\Temp\pip-build-env-i9ce0c14\overlay\Lib\site-packages\setuptools\build_meta.py", line 522, in run_setup
+      super().run_setup(setup_script=setup_script)
+    File "C:\Users\Marcin\AppData\Local\Temp\pip-build-env-i9ce0c14\overlay\Lib\site-packages\setuptools\build_meta.py", line 320, in run_setup
+      exec(code, locals())
+    File "<string>", line 1009, in <module>
+  RequiredDependencyException:
+  
+  The headers or library files could not be found for zlib,
+  a required dependency when compiling Pillow from source.
+  
+  Please see the install instructions at:
+     https://pillow.readthedocs.io/en/latest/installation.html
+  
+  
+  <string>:45: RuntimeWarning: Pillow 9.1.1 does not support Python 3.12 and does not provide prebuilt Windows binaries. We do not recommend building from source on Windows.
+  [end of output]
+  
+  note: This error originates from a subprocess, and is likely not a problem with pip.
+  ERROR: Failed building wheel for Pillow
+Failed to build Pillow
+ERROR: ERROR: Failed to build installable wheels for some pyproject.toml based projects (Pillow)
+
+>
+
+I also have 
+=docker-compose.yml=
+version: "3.9"
+
+services:
+  app:
+    build:
+      context: .
+      args:
+        - DEV=true
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./app:/app
+      - dev-static-data:/vol/web/static
+      - dev-media-data:/vol/web/media
+    command: >
+      sh -c "python manage.py wait_for_db &&
+             python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8000"
+    environment:
+      - DB_HOST=db
+      - DB_NAME=devdb
+      - DB_USER=devuser
+      - DB_PASS=changeme
+      - DEBUG=1
+    depends_on:
+      - db
+
+  db:
+    image: postgres:13-alpine
+    volumes:
+      - dev-db-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=devdb
+      - POSTGRES_USER=devuser
+      - POSTGRES_PASSWORD=changeme
+
+volumes:
+  dev-db-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ../data/dev/db
+  dev-static-data:
+  dev-media-data:
+
+In IntelliJ SDK dialog I've selected:
+Python SDK from disk
+Add Python interpreter:
+Docker Compose
+Server: Docker
+Configuation files:
+D:/usr/src/training/aws/aws-devops-deployment-automation-terraform-aws-docker/src/ma-devops-recipe-app/docker-compose.yml
+Service:
+app
+Environment variables:
+<none>
+Python interpreter:
+python
+
+Is it correct?
+
+>
+
+provide link to tutorial showing how to setup Run configuration for Python project imported to IntelliJ IDEA Ultimate with Python plugin or PyCharm in Windows 10 using remote Python interpreter using docker-compose.yml.
+In particular I want to understand how to setup script input.
+Dockerfile in the project has
+CMD ["run.sh"]
+and 
+=run.sh=
+#!/bin/sh
+
+set -e
+
+python manage.py wait_for_db
+python manage.py collectstatic --noinput
+python manage.py migrate
+
+gunicorn --bind :9000 --workers 4 app.wsgi
+
+so I need to run this script from within Docker container.
+When I try to provide path inside to run.sh inside Docker container:
+/scripts/run.sh
+it fails with:
+ Container ma-devops-recipe-app-db-1  Running
+ Container ma-devops-recipe-app-app-1  Recreate
+ Container ma-devops-recipe-app-app-1  Recreated
+Attaching to app-1
+app-1  | python: can't open file '/opt/project/\scripts\run.sh': [Errno 2] No such file or directory
+Aborting on container exit...
+ Container ma-devops-recipe-app-app-1  Stopping
+ Container ma-devops-recipe-app-app-1  Stopped
+app-1 exited with code 2
+
+When I try to provide path run.sh on Windows:
+D:\usr\src\training\aws\aws-devops-deployment-automation-terraform-aws-docker\src\ma-devops-recipe-app\scripts\run.sh
+it fails with:
+ Container ma-devops-recipe-app-db-1  Running
+ Container ma-devops-recipe-app-app-1  Recreate
+ Container ma-devops-recipe-app-app-1  Recreated
+Attaching to app-1
+app-1  |   File "/opt/project/scripts/run.sh", line 5
+app-1  |     python manage.py wait_for_db
+app-1  |            ^
+app-1  | SyntaxError: invalid syntax
+Aborting on container exit...
+app-1 exited with code 1
+ Container ma-devops-recipe-app-app-1  Stopping
+ Container ma-devops-recipe-app-app-1  Stopped
+
+>
+
+what are you talking about?
+check out previous conversation.
+I have Python project already imported into IntelliJ IDEA Ultimate with SDK configured to use Python interpreter from docker-compose which I already providede to you.
+Now I want to run the project.
+In Dockerfile I've already provided to you there is step to execute run.sh
+How can I do it using Run confifuration from IntelliJ IDEA Ultimate?
+
+>
+
+Create Python Django project with REST API to create/get/update/delete recipes.
+Project should contain .idea directory and IML file to load it into IntelliJ IDEA Ultimate with Python plugin.
+Make sure the project runs from IntelliJ IDEA Ultimate with Python plugin.

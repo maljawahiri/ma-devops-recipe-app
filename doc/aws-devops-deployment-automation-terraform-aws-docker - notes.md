@@ -17,6 +17,7 @@ https://docs.google.com/spreadsheets/d/1q0EPAeO1WaSeX_fQqIL4n08YWjYV-_oz1jT3VE_O
 
 
 https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html
+https://docs.aws.amazon.com/systems-manager/latest/userguide/install-plugin-windows.html
 https://github.com/99designs/aws-vault?tab=readme-ov-file#installing
 https://github.com/abiosoft/colima
 
@@ -47,9 +48,9 @@ https://docs.djangoproject.com/en/5.1/howto/static-files/deployment/
 
 git clone https://github.com/maljawahiri/ma-devops-recipe-app.git
 
-virtualenv .venv
-.venv\Scripts\activate.bat
-pip install -r requirements.txt
+docker compose build
+docker compose up -d
+docker exec -it ma-devops-recipe-app-app-1 /bin/sh
 
 localhost:8000/admin
 docker compose run --rm app sh -c "python manage.py createsuperuser"
@@ -154,3 +155,13 @@ git tag 05_35-initialise_setup_terraform
 
 git tag 05_35_02-initialise_setup_terraform
 
+docker compose run --rm terraform -chdir=setup fmt
+docker compose run --rm terraform -chdir=setup validate
+
+>
+
+docker compose run --rm terraform -chdir=deploy init
+docker compose run --rm terraform -chdir=deploy fmt
+docker compose run --rm terraform -chdir=deploy validate
+
+git tag 05_36-configure_deploy_terraform
