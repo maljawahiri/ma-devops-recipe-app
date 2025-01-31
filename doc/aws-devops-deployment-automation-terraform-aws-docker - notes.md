@@ -196,3 +196,13 @@ docker compose run --rm terraform -chdir=setup validate
 docker compose run --rm terraform -chdir=setup apply
 
 git tag 06_38_ias_user_for_cd
+
+aws_iam_user.cd: Creating...
+╷
+│ Error: creating IAM User (ma-recipe-app-api-cd): InvalidClientTokenId: The security token included in the request is invalid
+│ status code: 403, request id: bb03...
+│
+│ with aws_iam_user.cd,
+│ on iam.tf line 5, in resource "aws_iam_user" "cd":
+│ 5: resource "aws_iam_user" "cd" {
+│

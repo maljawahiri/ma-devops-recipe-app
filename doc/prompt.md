@@ -525,3 +525,261 @@ A:
 docker compose run --rm terraform -chdir=deploy init -reconfigure
 docker compose run --rm terraform -chdir=deploy validate
 docker compose run --rm terraform -chdir=deploy plan
+
+_________________________________________________________________________________________________________
+
+I've following Terraform code
+
+=setup/main.tf=
+
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "5.23.0"
+    }
+  }
+
+  backend "s3" {
+    bucket         = "ma-devops-recipe-app-us-east-1-tf-state"
+    key            = "tf-state-setup"
+    region         = "us-east-1"
+    encrypt        = true
+    dynamodb_table = "ma-devops-recipe-app-tf-lock"
+  }
+}
+
+provider "aws" {
+  region = "us-east-1"
+
+  default_tags {
+    tags = {
+      Environment = terraform.workspace
+      Project     = var.project
+      Contact     = var.contact
+      ManageBy    = "Terraform/setup"
+    }
+  }
+}
+
+=setup/variables.tf=
+
+variable "tf_state_bucket" {
+  description = "Name of S3 bucket in AWS for storing TF state"
+  default     = "ma-devops-recipe-app-us-east-1-tf-state"
+}
+
+variable "tf_state_lock_table" {
+  description = "Name of DynamoDB table for TF state locking"
+  default     = "ma-devops-recipe-app-tf-lock"
+}
+
+variable "project" {
+  description = "Project name for tagging resources"
+  default     = "ma-recipe-app-api"
+}
+
+variable "contact" {
+  description = "Contact name for tagging resources"
+  default     = "c@_______.com"
+}
+
+=setup/outputs.tf=
+
+output "cd_user_access_key_id" {
+  description = "Access key ID for CD user"
+  value       = aws_iam_access_key.cd.id
+}
+
+output "cd_user_access_key_secret" {
+  description = "Access key secret for CD user"
+  value       = aws_iam_access_key.cd.secret
+  sensitive   = true
+}
+
+=setup/iam.tf=
+
+#######################################################################
+# Create IAM user and policies for Continuous Deployment (CD) account #
+#######################################################################
+
+resource "aws_iam_user" "cd" {
+  name = "ma-recipe-app-api-cd"
+}
+
+resource "aws_iam_access_key" "cd" {
+  user = aws_iam_user.cd.name
+}
+
+#########################################################
+# Policy for Teraform backend to S3 and DynamoDB access #
+#########################################################
+
+data "aws_iam_policy_document" "tf_backend" {
+  statement {
+    effect    = "Allow"
+    actions   = ["s3:ListBucket"]
+    resources = ["arn:aws:s3:::${var.tf_state_bucket}"]
+  }
+
+  statement {
+    effect  = "Allow"
+    actions = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"]
+    resources = [
+      "arn:aws:s3:::${var.tf_state_bucket}/tf-state-deploy/*",
+      "arn:aws:s3:::${var.tf_state_bucket}/tf-state-deploy-env/*"
+    ]
+  }
+  statement {
+    effect = "Allow"
+    actions = [
+      "dynamodb:DescribeTable",
+      "dynamodb:GetItem",
+      "dynamodb:PutItem",
+      "dynamodb:DeleteItem"
+    ]
+    resources = ["arn:aws:dynamodb:*:*:table/${var.tf_state_lock_table}"]
+  }
+}
+
+resource "aws_iam_policy" "tf_backend" {
+  name        = "${aws_iam_user.cd.name}-tf-s3-dynamodb"
+  description = "Allow user to use S3 and DynamoDB for TF backend resources"
+  policy      = data.aws_iam_policy_document.tf_backend.json
+}
+
+resource "aws_iam_user_policy_attachment" "tf_backend" {
+  user       = aws_iam_user.cd.name
+  policy_arn = aws_iam_policy.tf_backend.arn
+}
+
+and I've ran:
+
+aws-vault exec research_user1 --duration=1h
+docker compose run --rm terraform -chdir=setup init
+...
+Terraform has been successfully initialized
+...
+docker compose run --rm terraform -chdir=setup fmt
+docker compose run --rm terraform -chdir=setup validate
+...
+Success: The configuration is valid.
+docker compose run --rm terraform -chdir=setup apply
+...
+aws_iam_user.cd: Creating...
+╷
+│ Error: creating IAM User (ma-recipe-app-api-cd): InvalidClientTokenId: The security token included in the request is invalid
+│ status code: 403, request id: bb03...
+│
+│ with aws_iam_user.cd,
+│ on iam.tf line 5, in resource "aws_iam_user" "cd":
+│ 5: resource "aws_iam_user" "cd" {
+│
+
+A:
+You can verify the IAM permissions for research_user1 using the AWS CLI in a few ways: https://docs.aws.amazon.com/IAM/latest/UserGuide/iam_example_iam_CreateUser_section.html
+
+Check your current permissions using get-user:
+
+aws-vault exec research_user1 -- aws iam get-user
+
+List all policies attached to your user:
+
+aws-vault exec research_user1 -- aws iam list-attached-user-policies --user-name research_user1
+
+List inline policies if any:
+
+aws-vault exec research_user1 -- aws iam list-user-policies --user-name research_user1
+
+To test specific IAM permissions, you can use the IAM policy simulator via CLI:
+
+aws-vault exec research_user1 -- aws iam simulate-principal-policy \
+    --policy-source-arn arn:aws:iam::YOUR_ACCOUNT_ID:user/research_user1 \
+    --action-names iam:CreateUser iam:CreateAccessKey iam:PutUserPolicy iam:AttachUserPolicy
+
+You can also check if you have the required permissions by testing a dry run: https://repost.aws/questions/QUmtU1yP8uSGizM60PsT-Iyg/access-denied-when-going-into-users
+
+aws-vault exec research_user1 -- aws iam get-user --user-name test-permissions
+
+This will fail with either an "AccessDenied" error (indicating you don't have permissions) or a "NoSuchEntity" error (indicating you have permissions to check for users but the test user doesn't exist).
+
+Remember to replace research_user1 with your actual IAM username if it's different. If you don't have sufficient permissions, you'll need to contact your AWS account administrator to grant the necessary IAM permissions. https://docs.aws.amazon.com/IAM/latest/UserGuide/access_permissions-required.html
+
+>
+
+if research_user1 is missing neccessary permissions how can I add them from command line?
+
+A:
+
+To add the necessary permissions to research_user1, you'll need to use an AWS account that has IAM administrative privileges. Here's how you can do it: https://repost.aws/questions/QUetBfcivwST67sjs1VOY7yw/allow-to-grant-select-on-mysql-information-schema
+
+First, switch to an admin user (let's call it admin_user):
+
+aws-vault exec admin_user -- aws iam create-policy \
+    --policy-name IAMUserManagementPolicy \
+    --policy-document '{
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Effect": "Allow",
+                "Action": [
+                    "iam:CreateUser",
+                    "iam:CreateAccessKey",
+                    "iam:PutUserPolicy",
+                    "iam:AttachUserPolicy",
+                    "iam:CreatePolicy",
+                    "iam:DeleteUser",
+                    "iam:DeleteAccessKey",
+                    "iam:DeleteUserPolicy",
+                    "iam:DetachUserPolicy",
+                    "iam:GetUser",
+                    "iam:ListUsers",
+                    "iam:ListAccessKeys",
+                    "iam:ListUserPolicies",
+                    "iam:ListAttachedUserPolicies"
+                ],
+                "Resource": "*"
+            }
+        ]
+    }'
+
+Attach the policy to research_user1:
+
+aws-vault exec admin_user -- aws iam attach-user-policy \
+    --user-name research_user1 \
+    --policy-arn arn:aws:iam::YOUR_ACCOUNT_ID:policy/IAMUserManagementPolicy
+
+Alternatively, if you want to use an existing AWS managed policy:
+
+# Attach IAM full access (be cautious with this as it grants full IAM permissions)
+aws-vault exec admin_user -- aws iam attach-user-policy \
+    --user-name research_user1 \
+    --policy-arn arn:aws:iam::aws:policy/IAMFullAccess
+
+Or for more limited permissions:
+
+# Attach PowerUserAccess (provides broad permissions but no IAM management)
+aws-vault exec admin_user -- aws iam attach-user-policy \
+    --user-name research_user1 \
+    --policy-arn arn:aws:iam::aws:policy/PowerUserAccess
+
+Verify the attached policies:
+
+aws-vault exec admin_user -- aws iam list-attached-user-policies \
+    --user-name research_user1
+
+Remember to:
+
+Replace YOUR_ACCOUNT_ID with your actual AWS account ID
+
+Use an admin account that has permissions to manage IAM
+
+Consider the principle of least privilege and only grant the permissions that are actually needed
+
+Be cautious when granting IAM permissions as they can be security-sensitive
+
+If you need to remove these permissions later:
+
+aws-vault exec admin_user -- aws iam detach-user-policy \
+    --user-name research_user1 \
+    --policy-arn arn:aws:iam::YOUR_ACCOUNT_ID:policy/IAMUserManagementPolicy
