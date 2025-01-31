@@ -653,9 +653,16 @@ resource "aws_iam_user_policy_attachment" "tf_backend" {
   policy_arn = aws_iam_policy.tf_backend.arn
 }
 
-and I've ran:
+I've created in IAM research_user1 with following Policies attached:
+AmazonS3FullAccess
+AmazonEC2FullAccess
+IAMFullAccess
+I've generated access key and secret key for this user and configured aws-vault with this user.
+I authenticate this user using aws-vault
 
 aws-vault exec research_user1 --duration=1h
+
+and I've ran:
 docker compose run --rm terraform -chdir=setup init
 ...
 Terraform has been successfully initialized
@@ -675,6 +682,31 @@ aws_iam_user.cd: Creating...
 │ on iam.tf line 5, in resource "aws_iam_user" "cd":
 │ 5: resource "aws_iam_user" "cd" {
 │
+
+As I can see research_user1 can run:
+aws s3 ls
+2022-04-11 11:54:21 lab1
+2022-04-12 12:54:21 lab2
+
+and
+aws sts get-caller-identity
+{
+    "UserId": "AIDA...",
+    "Account": "..."
+    "Arn": "arn:aws:iam::...:user/research_user1"
+}
+
+However following commands fail:
+aws iam get-user
+An error occurred (InvalidClientTokenId) when calling the GetUser operation: The security token included in the request is invalid
+
+aws-vault exec research_user1 -- aws iam list-user-policies --user-name research_user1
+An error occurred (InvalidClientTokenId) when calling...
+
+aws-vault exec research_user1 -- aws iam list-attached-user-policies --user-name research_user1
+An error occurred (InvalidClientTokenId) when calling the ListAttachedUserPolicies operation: The security token included in the request is invalid
+
+_________________________________________________________________________________________________________
 
 A:
 You can verify the IAM permissions for research_user1 using the AWS CLI in a few ways: https://docs.aws.amazon.com/IAM/latest/UserGuide/iam_example_iam_CreateUser_section.html
@@ -783,3 +815,193 @@ If you need to remove these permissions later:
 aws-vault exec admin_user -- aws iam detach-user-policy \
     --user-name research_user1 \
     --policy-arn arn:aws:iam::YOUR_ACCOUNT_ID:policy/IAMUserManagementPolicy
+
+>
+
+aws-vault exec research_user1 --duration=1h
+aws s3 ls
+2022-04-11 11:54:21 lab1
+2022-04-12 12:54:21 lab2
+aws iam get-user
+An error occurred (InvalidClientTokenId) when calling the GetUser operation: The security token included in the request is invalid
+
+>
+
+what do you mean by " you have different AWS credentials configured in different places"
+I'm using aws-vault so it ensures single credentials are selected.
+Those are credentials for research_user1
+Perhaps research_user1 has no permissions to make
+aws iam get-user
+call.
+I can see that I can make successful
+aws sts get-caller-identity
+
+>
+
+aws-vault exec research_user1 -- aws organizations list-policies --filter SERVICE_CONTROL_POLICY
+An error occurred (AccessDeniedException) when calling the ListPolicies operation: You don't have permissions to access this resource.
+
+aws-vault exec research_user1 -- aws organizations list-policies-for-target --target-id ROOT_OR_OU_ID --filter SERVICE_CONTROL_POLICY
+An error occurred (InvalidInputException) when calling the ListPoliciesForTarget operation: You provided a value that does not match the required pattern.
+
+_________________________________________________________________________________________________________________________________
+
+I got Terraform app I want to deploy using DockerCompose:
+
+=docker-compose.yml=
+
+services:
+  terraform:
+    image: hashicorp/terraform:1.6.2
+    volumes:
+      - ./setup:/tf/setup
+      - ./deploy:/tf/deploy
+    working_dir: /tf
+    environment:
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN}
+      - AWS_DEFAULT_REGION=us-east-1
+      - TF_WORKSPACE=${TF_WORKSPACE}
+
+=setup/main.tf=
+
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "5.23.0"
+    }
+  }
+
+  backend "s3" {
+    bucket         = "ma-devops-recipe-app-us-east-1-tf-state"
+    key            = "tf-state-setup"
+    region         = "us-east-1"
+    encrypt        = true
+    dynamodb_table = "ma-devops-recipe-app-tf-lock"
+  }
+}
+
+provider "aws" {
+  region = "us-east-1"
+
+  default_tags {
+    tags = {
+      Environment = terraform.workspace
+      Project     = var.project
+      Contact     = var.contact
+      ManageBy    = "Terraform/setup"
+    }
+  }
+}
+
+=setup/variables.tf=
+
+variable "tf_state_bucket" {
+  description = "Name of S3 bucket in AWS for storing TF state"
+  default     = "ma-devops-recipe-app-us-east-1-tf-state"
+}
+
+variable "tf_state_lock_table" {
+  description = "Name of DynamoDB table for TF state locking"
+  default     = "ma-devops-recipe-app-tf-lock"
+}
+
+variable "project" {
+  description = "Project name for tagging resources"
+  default     = "ma-recipe-app-api"
+}
+
+variable "contact" {
+  description = "Contact name for tagging resources"
+  default     = "c@_______.com"
+}
+
+=setup/outputs.tf=
+
+output "cd_user_access_key_id" {
+  description = "Access key ID for CD user"
+  value       = aws_iam_access_key.cd.id
+}
+
+output "cd_user_access_key_secret" {
+  description = "Access key secret for CD user"
+  value       = aws_iam_access_key.cd.secret
+  sensitive   = true
+}
+
+=setup/iam.tf=
+
+#######################################################################
+# Create IAM user and policies for Continuous Deployment (CD) account #
+#######################################################################
+
+resource "aws_iam_user" "cd" {
+  name = "ma-recipe-app-api-cd"
+}
+
+resource "aws_iam_access_key" "cd" {
+  user = aws_iam_user.cd.name
+}
+
+#########################################################
+# Policy for Teraform backend to S3 and DynamoDB access #
+#########################################################
+
+data "aws_iam_policy_document" "tf_backend" {
+  statement {
+    effect    = "Allow"
+    actions   = ["s3:ListBucket"]
+    resources = ["arn:aws:s3:::${var.tf_state_bucket}"]
+  }
+
+  statement {
+    effect  = "Allow"
+    actions = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"]
+    resources = [
+      "arn:aws:s3:::${var.tf_state_bucket}/tf-state-deploy/*",
+      "arn:aws:s3:::${var.tf_state_bucket}/tf-state-deploy-env/*"
+    ]
+  }
+  statement {
+    effect = "Allow"
+    actions = [
+      "dynamodb:DescribeTable",
+      "dynamodb:GetItem",
+      "dynamodb:PutItem",
+      "dynamodb:DeleteItem"
+    ]
+    resources = ["arn:aws:dynamodb:*:*:table/${var.tf_state_lock_table}"]
+  }
+}
+
+resource "aws_iam_policy" "tf_backend" {
+  name        = "${aws_iam_user.cd.name}-tf-s3-dynamodb"
+  description = "Allow user to use S3 and DynamoDB for TF backend resources"
+  policy      = data.aws_iam_policy_document.tf_backend.json
+}
+
+resource "aws_iam_user_policy_attachment" "tf_backend" {
+  user       = aws_iam_user.cd.name
+  policy_arn = aws_iam_policy.tf_backend.arn
+}
+
+I've created in IAM research_user1 with following Policies attached:
+AmazonS3FullAccess
+AmazonEC2FullAccess
+IAMFullAccess
+
+I want to issue following commands:
+
+docker compose run --rm terraform -chdir=setup fmt
+docker compose run --rm terraform -chdir=setup validate
+docker compose run --rm terraform -chdir=setup apply
+
+What is the recommended way to authenticate terraform calls in AWS?
+
+A:
+export AWS_ACCESS_KEY_ID=$(aws configure get aws_access_key_id)
+export AWS_SECRET_ACCESS_KEY=$(aws configure get aws_secret_access_key)
+
+

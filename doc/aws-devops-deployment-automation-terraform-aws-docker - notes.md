@@ -206,3 +206,24 @@ aws_iam_user.cd: Creating...
 │ on iam.tf line 5, in resource "aws_iam_user" "cd":
 │ 5: resource "aws_iam_user" "cd" {
 │
+
+something is broken with aws-vault
+
+instead of using aws-vault
+aws configure --profile "research_user1_cli"
+$ENV:AWS_PROFILE="research_user1"
+$ENV:AWS_ACCESS_KEY_ID = aws configure get aws_access_key_id
+$ENV:AWS_SECRET_ACCESS_KEY = aws configure get aws_secret_access_key
+
+docker compose run --rm terraform -chdir=setup apply
+
+To output sensitive value
+docker compose run --rm terraform -chdir=setup outputs cd_user_access_key_secret
+
+https://stackoverflow.com/questions/71734015/why-did-aws-vault-auth-failed-error-using-credentials-to-get-account-id-error
+
+Some things won't work with aws-vault's temporary credentials. Try to use the exec command and pass the parameter --no-session to use the original credentials:
+aws-vault exec brankovich --no-session -- docker-compose -f deploy/docker-compose.yml run --rm terraform init
+
+aws-vault exec research_user1 --no-session
+
