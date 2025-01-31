@@ -138,6 +138,7 @@ create S3 bucket
 ma-devops-recipe-app-us-east-1-tf-state
 create DynnamoDB table to lock S3 file
 ma-devops-recipe-app-tf-lock
+ma-devops-recipe-app-api-tf-lock
 Partition key
 LockID
 
@@ -146,6 +147,12 @@ LockID
 https://github.com/github/gitignore/blob/main/Terraform.gitignore
 
 https://registry.terraform.io/providers/hashicorp/aws/latest
+
+infra/setup - run from local laptop to deploy setup Terraform: everything needed for CI/CD job to work
+infra/deploy - create deployment environment infra like dev/stg/prod env, deploy code, resources to run in AWS
+Run terraform from docker-compose:
+* consistent env across all developers
+* consistent on local machine and on CI/CD
 
 aws-vault list
 aws-vault exec research_user1 --duration=1h
@@ -165,3 +172,27 @@ docker compose run --rm terraform -chdir=deploy fmt
 docker compose run --rm terraform -chdir=deploy validate
 
 git tag 05_36-configure_deploy_terraform
+
+>
+
+06_aws_setup_terraform
+
+Create CD IAM user:
+Used by Github build jobs
+Defines all permissions in code
+Create shared resources across envs:
+ECR Repositories
+
+https://developer.hashicorp.com/terraform/language/backend/s3#s3-bucket-permissions
+https://developer.hashicorp.com/terraform/language/backend/s3#dynamodb-table-permissions
+https://developer.hashicorp.com/terraform/language/values/outputs
+https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_user
+
+docker compose run --rm terraform -chdir=deploy init -reconfigure
+docker compose run --rm terraform -chdir=deploy validate
+
+docker compose run --rm terraform -chdir=setup fmt
+docker compose run --rm terraform -chdir=setup validate
+docker compose run --rm terraform -chdir=setup apply
+
+git tag 06_38_ias_user_for_cd

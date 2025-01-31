@@ -12,7 +12,7 @@ terraform {
     workspace_key_prefix = "tf-state-deploy-env"
     region               = "us-east-1"
     encrypt              = true
-    dynamodb_table       = "devops-recipe-app-api-tf-lock"
+    dynamodb_table       = "ma-devops-recipe-app-api-tf-lock"
   }
 }
 

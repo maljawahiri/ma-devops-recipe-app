@@ -451,3 +451,77 @@ How can I do it using Run confifuration from IntelliJ IDEA Ultimate?
 Create Python Django project with REST API to create/get/update/delete recipes.
 Project should contain .idea directory and IML file to load it into IntelliJ IDEA Ultimate with Python plugin.
 Make sure the project runs from IntelliJ IDEA Ultimate with Python plugin.
+
+>
+
+I've following Terraform code
+
+=deploy/main.tf=
+
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "5.23.0"
+    }
+  }
+
+  backend "s3" {
+    bucket               = "ma-devops-recipe-app-us-east-1-tf-state"
+    key                  = "tf-state-deploy"
+    workspace_key_prefix = "tf-state-deploy-env"
+    region               = "us-east-1"
+    encrypt              = true
+    dynamodb_table       = "devops-recipe-app-api-tf-lock"
+  }
+}
+
+provider "aws" {
+  region = "us-east-1"
+  default_tags {
+    tags = {
+      Environment = terraform.workspace
+      Project     = var.project
+      Contact     = var.contact
+      ManageBy    = "Terraform/deploy"
+    }
+  }
+}
+
+locals {
+  prefix = "${var.prefix}-${terraform.workspace}"
+}
+
+data "aws_region" "current" {}
+
+=deploy/deploy=
+
+variable "prefix" {
+description = "Prefix for resources in AWS"
+default     = "mraa"
+}
+
+variable "project" {
+description = "Project name for tagging resources"
+default     = "ma-recipe-app-api"
+}
+
+variable "contact" {
+description = "Contact email for tagging resources"
+default     = "contact@_______.com"
+}
+
+and I've ran
+
+docker compose run --rm terraform -chdir=deploy init
+docker compose run --rm terraform -chdir=deploy fmt
+docker compose run --rm terraform -chdir=deploy validate
+
+Now I've realized that dynamodb_table should be:
+"ma-devops-recipe-app-api-tf-lock"
+What should I do to correct AWS deployment except editing the main.tf
+
+A:
+docker compose run --rm terraform -chdir=deploy init -reconfigure
+docker compose run --rm terraform -chdir=deploy validate
+docker compose run --rm terraform -chdir=deploy plan
