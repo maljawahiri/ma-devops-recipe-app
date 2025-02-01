@@ -229,6 +229,8 @@ aws-vault exec research_user1 --no-session
 
 06_39_create_ecr_repos
 
+https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ecr_repository
+
 allow pushing images with same tag e.g. LATEST
 image_tag_mutability = "MUTABLE"
 
@@ -238,6 +240,16 @@ force_delete         = true
 disable image scan for vulnaberities whenever image is pushed
 scan_on_push = false
  
+docker compose run --rm terraform -chdir=setup fmt
+docker compose run --rm terraform -chdir=setup validate
+docker compose run --rm terraform -chdir=setup apply
+
+06_40_add_iam_permissions_for_ecr_repos
+
+https://docs.aws.amazon.com/AmazonECR/latest/userguide/image-push.html
+
+Add permissions to allow to push  to ECR images built by Github Actions CI/CD job 
+
 docker compose run --rm terraform -chdir=setup fmt
 docker compose run --rm terraform -chdir=setup validate
 docker compose run --rm terraform -chdir=setup apply
