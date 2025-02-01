@@ -227,3 +227,17 @@ aws-vault exec brankovich --no-session -- docker-compose -f deploy/docker-compos
 
 aws-vault exec research_user1 --no-session
 
+06_39_create_ecr_repos
+
+allow pushing images with same tag e.g. LATEST
+image_tag_mutability = "MUTABLE"
+
+force delete ECR repository on Terraform destroy
+force_delete         = true
+
+disable image scan for vulnaberities whenever image is pushed
+scan_on_push = false
+ 
+docker compose run --rm terraform -chdir=setup fmt
+docker compose run --rm terraform -chdir=setup validate
+docker compose run --rm terraform -chdir=setup apply
