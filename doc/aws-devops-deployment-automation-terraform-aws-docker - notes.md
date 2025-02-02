@@ -311,7 +311,7 @@ GitHub Pull Request == GitLab Merge Request
 
 ### 07_45_overview_of_github_actions
 
-workflows:
+Workflows:
 .github/workflows
 triggers determine when workflow runs
 workflow consist of jobs
