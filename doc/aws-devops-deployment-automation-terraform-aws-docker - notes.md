@@ -53,6 +53,7 @@ git clone https://github.com/maljawahiri/ma-devops-recipe-app.git
 
 docker compose build
 docker compose up -d
+docker compose -f docker-compose-local.yml up -d
 docker exec -it ma-devops-recipe-app-app-1 /bin/sh
 
 localhost:8000/admin
