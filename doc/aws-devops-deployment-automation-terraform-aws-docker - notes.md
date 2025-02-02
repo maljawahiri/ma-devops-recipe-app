@@ -370,3 +370,5 @@ Variables passed to reusable workflow need to be declared both in calling workfl
 Github Actions has a marketplace. We will use:
 https://github.com/docker/login-action
 https://github.com/github/vscode-github-actions
+
+git tag 07_47_add_python_checks
