@@ -53,6 +53,7 @@ git clone https://github.com/maljawahiri/ma-devops-recipe-app.git
 
 docker compose build
 docker compose up -d
+docker compose -f docker-compose-local.yml up -d
 docker exec -it ma-devops-recipe-app-app-1 /bin/sh
 
 localhost:8000/admin
@@ -311,7 +312,7 @@ GitHub Pull Request == GitLab Merge Request
 
 ### 07_45_overview_of_github_actions
 
-workflows:
+Workflows:
 .github/workflows
 triggers determine when workflow runs
 workflow consist of jobs
