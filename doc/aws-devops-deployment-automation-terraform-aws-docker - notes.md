@@ -53,6 +53,7 @@ git clone https://github.com/maljawahiri/ma-devops-recipe-app.git
 
 docker compose build
 docker compose up -d
+docker compose -f docker-compose-local.yml up -d
 docker exec -it ma-devops-recipe-app-app-1 /bin/sh
 
 localhost:8000/admin
@@ -311,7 +312,7 @@ GitHub Pull Request == GitLab Merge Request
 
 ### 07_45_overview_of_github_actions
 
-workflows:
+Workflows:
 .github/workflows
 triggers determine when workflow runs
 workflow consist of jobs
@@ -369,3 +370,5 @@ Variables passed to reusable workflow need to be declared both in calling workfl
 Github Actions has a marketplace. We will use:
 https://github.com/docker/login-action
 https://github.com/github/vscode-github-actions
+
+git tag 07_47_add_python_checks
