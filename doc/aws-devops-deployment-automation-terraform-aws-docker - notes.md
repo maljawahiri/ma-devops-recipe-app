@@ -328,9 +328,13 @@ ma-devops-recipe-app workflows:
 
 ### Setup variables in Github repository.
 https://developer.hashicorp.com/terraform/cli/commands/output
+
 docker compose run --rm terraform -chdir=setup output
+
 Grab cd_user_access_key_id, ecr_repo_app, ecr_repo_proxy
+
 docker compose run --rm terraform -chdir=setup output cd_user_access_key_secret
+
 Grab cd_user_access_key_secret
 Navigate to repo on Github:
 https://github.com/maljawahiri/ma-devops-recipe-app
