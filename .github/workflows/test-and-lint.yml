@@ -7,14 +7,11 @@ on:
       DOCKERHUB_TOKEN:
         required: true
 
-env:
-  IS_ENTERPRISE: ${{ github.server_url != 'https://github.com' }}
-
 jobs:
-  # Job A: Runs ONLY on GitHub-hosted Ubuntu (regular GitHub)
+  # Job A: Runs ONLY on regular GitHub (Ubuntu Runner)
   test-ubuntu:
     runs-on: ubuntu-22.04
-    if: ${{ !env.IS_ENTERPRISE }}  # Explicit environment check
+    if: ${{ github.server_url == 'https://github.com' }}  # Directly check server URL
     continue-on-error: true
     steps:
       - uses: actions/checkout@v4
@@ -23,17 +20,13 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USER }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      # - name: Test
-      #   run: docker compose run --rm app sh -c "python manage.py wait_for_db && python manage.py test"
-      # - name: Lint
-      #   run: docker compose run --rm app sh -c "flake8"
       - name: Echo
         run: echo "Hello, Ubuntu!"
 
-  # Job B: Runs ONLY on self-hosted Windows (GitHub Enterprise)
+  # Job B: Runs ONLY on GitHub Enterprise (Self-Hosted Windows Runner)
   test-windows:
     runs-on: [self-hosted, Windows]
-    if: ${{ env.IS_ENTERPRISE }}  # Explicit environment check
+    if: ${{ github.server_url != 'https://github.com' }}  # Directly check server URL
     continue-on-error: true
     steps:
       - uses: actions/checkout@v4
@@ -47,19 +40,33 @@ jobs:
       - name: Lint
         run: docker compose run --rm app sh -c "flake8"
 
-  # Final Status Check (Environment-aware)
+  # Final Status Check
   final-status:
     needs: [test-ubuntu, test-windows]
-    runs-on: ${{ env.IS_ENTERPRISE && 'self-hosted' || 'ubuntu-22.04' }}
+    runs-on: ubuntu-22.04  # You can adjust this as needed
     if: always()
     steps:
       - name: Evaluate Results
         run: |
-          if [[ "${{ needs.test-ubuntu.result }}" == "success" ]] || 
-             [[ "${{ needs.test-windows.result }}" == "success" ]]; then
-            echo "Workflow Succeeded"
+          echo "Evaluating job results..."
+          # Initialize overall result as success
+          OVERALL_RESULT="success"
+
+          # Check if test-ubuntu job ran and its result
+          if [ "${{ needs.test-ubuntu.result }}" == "failure" ]; then
+            echo "test-ubuntu failed."
+            OVERALL_RESULT="failure"
+          fi
+
+          # Check if test-windows job ran and its result
+          if [ "${{ needs.test-windows.result }}" == "failure" ]; then
+            echo "test-windows failed."
+            OVERALL_RESULT="failure"
+          fi
+
+          echo "Overall result: $OVERALL_RESULT"
+          if [ "$OVERALL_RESULT" == "success" ]; then
             exit 0
           else
-            echo "Workflow Failed"
             exit 1
           fi
