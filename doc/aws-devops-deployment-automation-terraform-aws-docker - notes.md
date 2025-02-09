@@ -376,3 +376,15 @@ https://github.com/docker/login-action
 https://github.com/github/vscode-github-actions
 
 git tag 07_47_add_python_checks
+
+From your project root
+```
+git submodule add https://github.com/docker/login-action.git .github/actions/docker-login
+cd .github/actions/docker-login
+git checkout v3
+```
+Add and commit the .gitmodules file and submodule directories
+```
+git add .gitmodules .github/actions
+git commit -m "Add GitHub Actions as submodules"
+```
