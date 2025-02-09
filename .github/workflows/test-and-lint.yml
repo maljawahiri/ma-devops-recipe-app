@@ -101,7 +101,7 @@ jobs:
 
   # Final Status Check
   final-status:
-    needs: [test-ubuntu, test-windows]
+    needs: [python-ubuntu, python-windows, terraform-ubuntu, terraform-windows]
     runs-on: ${{ (github.server_url == 'https://github.com' && 'ubuntu-22.04') || 'self-hosted' }}
     if: always()
     steps:
@@ -112,14 +112,26 @@ jobs:
           OVERALL_RESULT="success"
 
           # Check if test-ubuntu job ran and its result
-          if [ "${{ needs.test-ubuntu.result }}" == "failure" ]; then
-            echo "test-ubuntu failed."
+          if [ "${{ needs.python-ubuntu.result }}" == "failure" ]; then
+            echo "python-ubuntu failed."
             OVERALL_RESULT="failure"
           fi
 
           # Check if test-windows job ran and its result
-          if [ "${{ needs.test-windows.result }}" == "failure" ]; then
-            echo "test-windows failed."
+          if [ "${{ needs.python-windows.result }}" == "failure" ]; then
+            echo "python-windows failed."
+            OVERALL_RESULT="failure"
+          fi
+
+          # Check if test-ubuntu job ran and its result
+          if [ "${{ needs.terraform-ubuntu.result }}" == "failure" ]; then
+            echo "python-ubuntu failed."
+            OVERALL_RESULT="failure"
+          fi
+
+          # Check if test-windows job ran and its result
+          if [ "${{ needs.terraform-windows.result }}" == "failure" ]; then
+            echo "python-windows failed."
             OVERALL_RESULT="failure"
           fi
 
