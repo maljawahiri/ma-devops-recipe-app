@@ -51,7 +51,7 @@ jobs:
   # Final Status Check
   final-status:
     needs: [test-ubuntu, test-windows]
-    runs-on: ubuntu-22.04  # You can adjust this as needed
+    runs-on: ${{ (github.server_url == 'https://github.com' && 'ubuntu-22.04') || 'self-hosted' }}
     if: always()
     steps:
       - name: Evaluate Results
