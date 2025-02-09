@@ -388,3 +388,5 @@ Add and commit the .gitmodules file and submodule directories
 git add .gitmodules .github/actions
 git commit -m "Add GitHub Actions as submodules"
 ```
+
+### 07_48_add_terraform_checks
