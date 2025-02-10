@@ -47,6 +47,7 @@ https://github.com/LondonAppDeveloper/devops-recipe-app-api-starting-point
 https://gitlab.com/londonappdeveloper/devops-recipe-app-api-starting-point
 
 https://docs.djangoproject.com/en/5.1/howto/static-files/deployment/
+https://uwsgi-docs.readthedocs.io/en/latest/
 
 ```
 git clone https://github.com/maljawahiri/ma-devops-recipe-app.git
@@ -391,3 +392,11 @@ git commit -m "Add GitHub Actions as submodules"
 
 ### 07_48_add_terraform_checks
 
+### 07_49_build_and_push_docker_images
+
+https://docs.aws.amazon.com/AmazonECR/latest/userguide/docker-push-ecr-image.html
+https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/store-information-in-variables#default-environment-variables
+
+After PR merged to main deploy workflow should be triggered.
+Next check if Docker images were created at:
+AWS Console > ECR

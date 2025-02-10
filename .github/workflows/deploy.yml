@@ -1,0 +1,103 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+      - prod
+
+jobs:
+  test-lint:
+    uses: ./.github/workflows/test-and-lint.yml
+    name: Test and Lint
+    secrets:
+      DOCKERHUB_USER: ${{ vars.DOCKERHUB_USER }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+
+  deploy-ubuntu:
+    name: Deploy ubuntu-22.04
+    runs-on: ubuntu-22.04
+    if: ${{ github.server_url == 'https://github.com' }}
+    needs: [test-lint]
+    steps:
+      - name: Deploy placeholder
+        run: echo "Deploy placeholder"
+      # - name: Checkout
+      #   uses: actions/checkout@v4
+      # - name: Set vars
+      #   run: |
+      #     if [[ $GITHUB_REF == 'refs/heads/prod' ]]; then
+      #       echo "prod" > .workspace
+      #     else
+      #     echo "staging" > .workspace
+      #     fi
+      # - name: Push to ECR
+      #   env:
+      #     AWS_ACCESS_KEY_ID: ${{ vars.AWS_ACCESS_KEY_ID }}
+      #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      #   run: |
+      #     aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+      #     docker build --compress -t ${{ vars.ECR_REPO_APP }}:$GITHUB_SHA .
+      #     docker push ${{ vars.ECR_REPO_APP }}:$GITHUB_SHA
+      #     docker build --compress -t ${{ vars.ECR_REPO_PROXY }}:$GITHUB_SHA proxy/
+      #     docker push ${{ vars.ECR_REPO_PROXY }}:$GITHUB_SHA
+
+
+  deploy-windows:
+    name: Deploy Windows
+    runs-on: [self-hosted, Windows]
+    if: ${{ github.server_url != 'https://github.com' }}
+    needs: [test-lint]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set vars
+        shell: pwsh
+        run: |
+          if ($env:GITHUB_REF -eq 'refs/heads/prod') {
+            "prod" | Out-File -FilePath .workspace
+          } else {
+            "staging" | Out-File -FilePath .workspace
+          }
+      - name: Push to ECR
+        env:
+          AWS_ACCESS_KEY_ID: ${{ vars.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        shell: pwsh
+        run: |
+          (aws ecr get-login-password --region us-east-1) | docker login --username AWS --password-stdin ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+          docker build --compress -t ${{ vars.ECR_REPO_APP }}:$GITHUB_SHA .
+          docker push ${{ vars.ECR_REPO_APP }}:$GITHUB_SHA
+          docker build --compress -t ${{ vars.ECR_REPO_PROXY }}:$GITHUB_SHA proxy/
+          docker push ${{ vars.ECR_REPO_PROXY }}:$GITHUB_SHA
+
+  final-status:
+    needs: [deploy-ubuntu, deploy-windows]
+    runs-on: ${{ (github.server_url == 'https://github.com' && 'ubuntu-22.04') || 'self-hosted' }}
+    if: always()
+    steps:
+      - name: Determine Deploy Workflow Status
+        shell: pwsh
+        run: |
+          Write-Output "Evaluating job results..."
+          # Initialize overall result as success
+          $OVERALL_RESULT = "success"
+
+          # Check if deploy-ubuntu job ran and its result
+          if ("${{ needs.deploy-ubuntu.result }}" -eq "failure") {
+            Write-Output "deploy-ubuntu failed."
+            $OVERALL_RESULT = "failure"
+          }
+
+          # Check if deploy-windows job ran and its result
+          if ("${{ needs.deploy-windows.result }}" -eq "failure") {
+            Write-Output "deploy-windows failed."
+            $OVERALL_RESULT = "failure"
+          }
+
+          Write-Output "Overall result: $OVERALL_RESULT"
+          if ($OVERALL_RESULT -eq "success") {
+            exit 0
+          } else {
+            exit 1
+          }
