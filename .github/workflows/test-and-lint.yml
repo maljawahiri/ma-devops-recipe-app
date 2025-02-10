@@ -105,14 +105,40 @@ jobs:
     runs-on: ${{ (github.server_url == 'https://github.com' && 'ubuntu-22.04') || 'self-hosted' }}
     if: always()
     steps:
-      - name: Check pwsh
-        shell: pwsh
-        run: pwsh --version  # Outputs: PowerShell 7.2.17
       - name: Determine Workflow Status
         shell: pwsh
         run: |
-          $ubuntu = "${{ needs.test-ubuntu.result }}"
-          $windows = "${{ needs.test-windows.result }}"
-          
-          if ($ubuntu -eq 'success' -or $windows -eq 'success') { exit 0 }
-          else { exit 1 }
+          Write-Output "Evaluating job results..."
+          # Initialize overall result as success
+          $OVERALL_RESULT = "success"
+
+          # Check if python-ubuntu job ran and its result
+          if ("${{ needs.python-ubuntu.result }}" -eq "failure") {
+            Write-Output "python-ubuntu failed."
+            $OVERALL_RESULT = "failure"
+          }
+
+          # Check if python-windows job ran and its result
+          if ("${{ needs.python-windows.result }}" -eq "failure") {
+            Write-Output "python-windows failed."
+            $OVERALL_RESULT = "failure"
+          }
+
+          # Check if terraform-ubuntu job ran and its result
+          if ("${{ needs.terraform-ubuntu.result }}" -eq "failure") {
+            Write-Output "terraform-ubuntu failed."
+            $OVERALL_RESULT = "failure"
+          }
+
+          # Check if terraform-windows job ran and its result
+          if ("${{ needs.terraform-windows.result }}" -eq "failure") {
+            Write-Output "terraform-windows failed."
+            $OVERALL_RESULT = "failure"
+          }
+
+          Write-Output "Overall result: $OVERALL_RESULT"
+          if ($OVERALL_RESULT -eq "success") {
+            exit 0
+          } else {
+            exit 1
+          }
