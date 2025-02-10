@@ -400,3 +400,5 @@ https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow
 After PR merged to main deploy workflow should be triggered.
 Next check if Docker images were created at:
 AWS Console > ECR
+
+git tag 07_49_build_and_push_docker_images
