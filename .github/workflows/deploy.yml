@@ -71,7 +71,7 @@ jobs:
           docker build --compress -t ${{ vars.ECR_REPO_PROXY }}:$GITHUB_SHA proxy/
           docker push ${{ vars.ECR_REPO_PROXY }}:$GITHUB_SHA
 
-  final-status:
+  deploy-final-status:
     needs: [deploy-ubuntu, deploy-windows]
     runs-on: ${{ (github.server_url == 'https://github.com' && 'ubuntu-22.04') || 'self-hosted' }}
     if: always()

@@ -100,7 +100,7 @@ jobs:
           docker compose run --rm terraform -chdir=deploy fmt -check
 
   # Final Status Check
-  final-status:
+  test-and-lint-final-status:
     needs: [python-ubuntu, python-windows, terraform-ubuntu, terraform-windows]
     runs-on: ${{ (github.server_url == 'https://github.com' && 'ubuntu-22.04') || 'self-hosted' }}
     if: always()
