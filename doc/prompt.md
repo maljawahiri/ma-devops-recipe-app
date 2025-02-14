@@ -1004,4 +1004,385 @@ A:
 export AWS_ACCESS_KEY_ID=$(aws configure get aws_access_key_id)
 export AWS_SECRET_ACCESS_KEY=$(aws configure get aws_secret_access_key)
 
+>>>
 
+In AWS Console I've created in IAM research_user1 with following Policies attached:
+AmazonS3FullAccess
+AmazonEC2FullAccess
+IAMFullAccess
+
+I've corporate app which provides me with temporary credentials for AWS CLI.
+After running the app in cmd when I issue:
+
+aws s3 ls
+2022-04-11 11:54:21 lab1
+2022-04-12 12:54:21 lab2
+
+aws iam get-user
+An error occurred (ValidationError) when calling the GetUser operation: Must specify userName when calling with non-User credentials
+
+aws iam get-user --user-name research_user1
+{
+  "User": {
+    "Path": "/",
+    "UserName": "research_user1",
+    "UserId": "...",
+    "Arn": "arn:aws..."
+    "CreateDate": "..."
+  }
+}
+
+I've terraform configuration
+
+=deploy/main.tf=
+
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "5.23.0"
+    }
+  }
+
+  backend "s3" {
+    bucket               = "ma-devops-recipe-app-us-east-1-tf-state"
+    key                  = "tf-state-deploy"
+    workspace_key_prefix = "tf-state-deploy-env"
+    region               = "us-east-1"
+    encrypt              = true
+    dynamodb_table       = "ma-devops-recipe-app-api-tf-lock"
+  }
+}
+
+provider "aws" {
+  region = "us-east-1"
+  default_tags {
+    tags = {
+      Environment = terraform.workspace
+      Project     = var.project
+      Contact     = var.contact
+      ManageBy    = "Terraform/deploy"
+    }
+  }
+}
+
+locals {
+  prefix = "${var.prefix}-${terraform.workspace}"
+}
+
+data "aws_region" "current" {}
+
+=deploy/variables.tf=
+
+variable "prefix" {
+  description = "Prefix for resources in AWS"
+  default     = "mraa"
+}
+
+variable "project" {
+  description = "Project name for tagging resources"
+  default     = "ma-recipe-app-api"
+}
+
+variable "contact" {
+  description = "Contact email for tagging resources"
+  default     = "..."
+}
+
+=docker-compose.yml=
+services:
+  terraform:
+    image: hashicorp/terraform:1.6.2
+    volumes:
+      - ./setup:/tf/setup
+      - ./deploy:/tf/deploy
+    working_dir: /tf
+    environment:
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN}
+      - AWS_DEFAULT_REGION=us-east-1
+      - TF_WORKSPACE=${TF_WORKSPACE}
+
+When I run:
+docker compose run --rm terraform -chdir=deploy init
+time="2025-02-14T20:45:21+01:00" level=warning msg="The \"AWS_ACCESS_KEY_ID\" variable is not set. Defaulting to a blank string."
+time="2025-02-14T20:45:21+01:00" level=warning msg="The \"AWS_SECRET_ACCESS_KEY\" variable is not set. Defaulting to a blank string."
+time="2025-02-14T20:45:21+01:00" level=warning msg="The \"AWS_SESSION_TOKEN\" variable is not set. Defaulting to a blank string."
+time="2025-02-14T20:45:21+01:00" level=warning msg="The \"TF_WORKSPACE\" variable is not set. Defaulting to a blank string."│ Error: No valid credential sources found 
+│ Error: failed to refresh cached credentials, no EC2 IMDS role found, operation error ec2imds: GetMetadata, http response error StatusCode: 403, request to EC2 IMDS failed
+
+How can I make terraform use research_user1 which has all necessary roles and policies attached?
+I can't generated access key and secret key for research_user1.
+I must use corporate app which provides me with temporary credentials for AWS CLI.
+
+>
+
+nope that's not critical part
+the critical part is that default temporary credentials I have for AWS CLI are for some user different than research_user1
+As you can see if I issue:
+
+aws iam get-user
+An error occurred (ValidationError) when calling the GetUser operation: Must specify userName when calling with non-User credentials
+
+Only if I change context to research_user1 I get correct data:
+aws iam get-user --user-name research_user1
+{
+  "User": {
+    "Path": "/",
+    "UserName": "research_user1",
+    "UserId": "...",
+    "Arn": "arn:aws..."
+    "CreateDate": "..."
+  }
+}
+
+So if I specify temporary credentials I'll not be executing terraform command as research_user1 but as some user without necessary roles and policies attached.
+I need to execute terraform command as research_user1.
+How can I do it?
+
+>
+
+I've created Role terraform-role with with following Permissions policies:
+AmazonS3FullAccess
+AmazonEC2FullAccess
+IAMFullAccess
+AmazonDynamoDBFullAccess
+What should I do make 
+docker compose run --rm terraform -chdir=deploy init
+work correctly given I've access to AWS CLI using corporate temporary credentials which produce
+aws iam get-user
+An error occurred (ValidationError) when calling the GetUser operation: Must specify userName when calling with non-User credentials
+
+>
+
+ok, let's summarize because I got lost.
+I've role terraform-role which have all necessary permissions to run terraform actions.
+I've AWS CLI access with temporary credentials which don't have permissions to run terraform actions but can see terraform-role when I issue:
+aws iam list-roles
+Provide concise list of steps to allow perform terraform actions using docker-compose.yml I provided before.
+Steps shall not involve modifications of the terraform code.
+Steps should be easily reproducable in future when I get new temporary credentials.
+
+A:
+echo %AWS_ACCESS_KEY_ID%
+echo %AWS_SECRET_ACCESS_KEY%
+echo %AWS_SESSION_TOKEN%
+aws sts get-caller-identity --query Account --output text
+aws sts assume-role --role-arn arn:aws:iam::123456789012:role/terraform-role --role-session-name terraform-session > temp_role.json
+for /f "tokens=4 delims=\" %i in ('findstr /i "AccessKeyId" temp_role.json') do set AWS_ACCESS_KEY_ID=%i
+set AWS_ACCESS_KEY_ID=%AWS_ACCESS_KEY_ID:~0,-2%
+set AWS_ACCESS_KEY_ID=%AWS_ACCESS_KEY_ID:"=%
+
+for /f "tokens=4 delims=\" %i in ('findstr /i "SecretAccessKey" temp_role.json') do set AWS_SECRET_ACCESS_KEY=%i
+set AWS_SECRET_ACCESS_KEY=%AWS_SECRET_ACCESS_KEY:~0,-2%
+set AWS_SECRET_ACCESS_KEY=%AWS_SECRET_ACCESS_KEY:"=%
+
+for /f "tokens=4 delims=\" %i in ('findstr /i "SessionToken" temp_role.json') do set AWS_SESSION_TOKEN=%i
+set AWS_SESSION_TOKEN=%AWS_SESSION_TOKEN:~0,-2%
+set AWS_SESSION_TOKEN=%AWS_SESSION_TOKEN:"=%
+
+echo %AWS_ACCESS_KEY_ID%
+echo %AWS_SECRET_ACCESS_KEY%
+echo %AWS_SESSION_TOKEN%
+
+del temp_role.json
+
+aws sts get-caller-identity
+{
+    "UserId": "AROA...:terraform-session",
+    "Account": "123456789012",
+    "Arn": "arn:aws:sts::123456789012:assumed-role/terraform-role/terraform-session"
+}
+
+@echo off
+REM 1. Obtain AWS Account ID
+FOR /F "delims=" %%A IN ('aws sts get-caller-identity --query Account --output text') DO SET ACCOUNT_ID=%%A
+
+REM 2. Assume terraform-role
+aws sts assume-role --role-arn arn:aws:iam::%ACCOUNT_ID%:role/terraform-role --role-session-name terraform-session > temp_role.json
+
+REM 3. Extract and set AWS_ACCESS_KEY_ID
+for /f "tokens=4 delims=\" %%i in ('findstr /i "AccessKeyId" temp_role.json') do set AWS_ACCESS_KEY_ID=%%i
+set AWS_ACCESS_KEY_ID=%AWS_ACCESS_KEY_ID:~0,-2%
+set AWS_ACCESS_KEY_ID=%AWS_ACCESS_KEY_ID:"=%
+
+REM 4. Extract and set AWS_SECRET_ACCESS_KEY
+for /f "tokens=4 delims=\" %%i in ('findstr /i "SecretAccessKey" temp_role.json') do set AWS_SECRET_ACCESS_KEY=%%i
+set AWS_SECRET_ACCESS_KEY=%AWS_SECRET_ACCESS_KEY:~0,-2%
+set AWS_SECRET_ACCESS_KEY=%AWS_SECRET_ACCESS_KEY:"=%
+
+REM 5. Extract and set AWS_SESSION_TOKEN
+for /f "tokens=4 delims=\" %%i in ('findstr /i "SessionToken" temp_role.json') do set AWS_SESSION_TOKEN=%%i
+set AWS_SESSION_TOKEN=%AWS_SESSION_TOKEN:~0,-2%
+set AWS_SESSION_TOKEN=%AWS_SESSION_TOKEN:"=%
+
+REM 6. Clean up
+del temp_role.json
+
+REM 7. Confirm Assumed Role
+aws sts get-caller-identity
+
+echo Assumed terraform-role and exported credentials.
+
+>>>
+
+
+I've terraform configuration
+
+=deploy/main.tf=
+
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "5.23.0"
+    }
+  }
+
+  backend "s3" {
+    bucket               = "ma-devops-recipe-app-us-east-1-tf-state"
+    key                  = "tf-state-deploy"
+    workspace_key_prefix = "tf-state-deploy-env"
+    region               = "us-east-1"
+    encrypt              = true
+    dynamodb_table       = "ma-devops-recipe-app-api-tf-lock"
+  }
+}
+
+provider "aws" {
+  region = "us-east-1"
+  default_tags {
+    tags = {
+      Environment = terraform.workspace
+      Project     = var.project
+      Contact     = var.contact
+      ManageBy    = "Terraform/deploy"
+    }
+  }
+}
+
+locals {
+  prefix = "${var.prefix}-${terraform.workspace}"
+}
+
+data "aws_region" "current" {}
+
+=deploy/variables.tf=
+
+variable "prefix" {
+  description = "Prefix for resources in AWS"
+  default     = "mraa"
+}
+
+variable "project" {
+  description = "Project name for tagging resources"
+  default     = "ma-recipe-app-api"
+}
+
+variable "contact" {
+  description = "Contact email for tagging resources"
+  default     = "..."
+}
+
+=docker-compose.yml=
+services:
+  terraform:
+    image: hashicorp/terraform:1.6.2
+    volumes:
+      - ./setup:/tf/setup
+      - ./deploy:/tf/deploy
+    working_dir: /tf
+    environment:
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN}
+      - AWS_DEFAULT_REGION=us-east-1
+      - TF_WORKSPACE=${TF_WORKSPACE}
+
+
+I've created Role terraform-role with with following Permissions policies:
+AmazonS3FullAccess
+AmazonEC2FullAccess
+IAMFullAccess
+AmazonDynamoDBFullAccess
+
+I've corporate app which provides me with temporary credentials for AWS CLI.
+After running the app in cmd when I issue:
+
+aws s3 ls
+2022-04-11 11:54:21 lab1
+2022-04-12 12:54:21 lab2
+
+aws iam get-user
+An error occurred (ValidationError) when calling the GetUser operation: Must specify userName when calling with non-User credentials
+
+When I run:
+docker compose run --rm terraform -chdir=deploy init
+time="2025-02-14T20:45:21+01:00" level=warning msg="The \"AWS_ACCESS_KEY_ID\" variable is not set. Defaulting to a blank string."
+time="2025-02-14T20:45:21+01:00" level=warning msg="The \"AWS_SECRET_ACCESS_KEY\" variable is not set. Defaulting to a blank string."
+time="2025-02-14T20:45:21+01:00" level=warning msg="The \"AWS_SESSION_TOKEN\" variable is not set. Defaulting to a blank string."
+time="2025-02-14T20:45:21+01:00" level=warning msg="The \"TF_WORKSPACE\" variable is not set. Defaulting to a blank string."│ Error: No valid credential sources found 
+│ Error: failed to refresh cached credentials, no EC2 IMDS role found, operation error ec2imds: GetMetadata, http response error StatusCode: 403, request to EC2 IMDS failed
+
+I can't generated access key and secret key for AWS user.
+I must use corporate app which provides me with temporary credentials for AWS CLI.
+I've role terraform-role which have all necessary permissions to run terraform actions.
+I've AWS CLI access with temporary credentials which don't have permissions to run terraform actions but can see terraform-role when I issue:
+aws iam list-roles
+Provide concise list of steps to allow perform terraform actions using docker-compose.yml I provided before:
+docker compose run --rm terraform -chdir=deploy init
+Steps shall not involve modifications of the terraform code.
+Steps should be easily reproducable in future when I get new temporary credentials.
+
+>
+
+A:
+
+ROLE_ARN=$(aws iam list-roles --query "Roles[?RoleName=='terraform-role'].Arn" --output text)
+
+CREDS=$(aws sts assume-role --role-arn "$ROLE_ARN" --role-session-name "TFSession-$(date +%s)")
+export AWS_ACCESS_KEY_ID=$(echo "$CREDS" | jq -r '.Credentials.AccessKeyId')
+export AWS_SECRET_ACCESS_KEY=$(echo "$CREDS" | jq -r '.Credentials.SecretAccessKey')
+export AWS_SESSION_TOKEN=$(echo "$CREDS" | jq -r '.Credentials.SessionToken')
+
+docker compose run --rm terraform -chdir=deploy init
+
+#!/bin/bash
+ROLE_ARN=$(aws iam list-roles --query "Roles[?RoleName=='terraform-role'].Arn" --output text)
+CREDS=$(aws sts assume-role --role-arn "$ROLE_ARN" --role-session-name "TFSession-$(date +%s)")
+export AWS_ACCESS_KEY_ID=$(echo "$CREDS" | jq -r '.Credentials.AccessKeyId')
+export AWS_SECRET_ACCESS_KEY=$(echo "$CREDS" | jq -r '.Credentials.SecretAccessKey')
+export AWS_SESSION_TOKEN=$(echo "$CREDS" | jq -r '.Credentials.SessionToken')
+docker compose run --rm terraform -chdir=deploy "$@"
+
+./run_terraform.sh init  # Or apply/destroy/etc.
+
+>
+
+# Get the role ARN
+$ROLE_ARN = (aws iam list-roles --query "Roles[?RoleName=='terraform-role'].Arn" --output text)
+
+# Assume the role and get temporary credentials
+$CREDS = aws sts assume-role --role-arn $ROLE_ARN --role-session-name "TFSession-$(Get-Date -Format 'yyyyMMddHHmmss')" | ConvertFrom-Json
+
+# Set environment variables for Docker
+$env:AWS_ACCESS_KEY_ID = $CREDS.Credentials.AccessKeyId
+$env:AWS_SECRET_ACCESS_KEY = $CREDS.Credentials.SecretAccessKey
+$env:AWS_SESSION_TOKEN = $CREDS.Credentials.SessionToken
+$env:TF_WORKSPACE = "your-workspace-name"  # Set default or remove if using multiple workspaces
+
+# Run Terraform command with Docker
+docker compose run --rm terraform -chdir=deploy $args
+
+# First make sure you have active corporate credentials in your PowerShell session
+# Then run the script with Terraform commands:
+.\run-terraform.ps1 init
+.\run-terraform.ps1 plan
+
+aws configure set aws_access_key_id $env:AWS_ACCESS_KEY_ID
+aws configure set aws_secret_access_key $env:AWS_SECRET_ACCESS_KEY
+aws configure set aws_session_token $env:AWS_SESSION_TOKEN
+aws configure set region us-east-1
+
+Set-ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
