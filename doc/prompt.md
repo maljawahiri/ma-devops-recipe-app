@@ -1360,25 +1360,31 @@ docker compose run --rm terraform -chdir=deploy "$@"
 
 >
 
+==
+
+param(
+    [string]$RoleName = "terraform-role"  # Default role name if not specified
+)
+
 # Get the role ARN
-$ROLE_ARN = (aws iam list-roles --query "Roles[?RoleName=='terraform-role'].Arn" --output text)
+$ROLE_ARN = (aws iam list-roles --query "Roles[?RoleName=='$RoleName'].Arn" --output text)
 
 # Assume the role and get temporary credentials
 $CREDS = aws sts assume-role --role-arn $ROLE_ARN --role-session-name "TFSession-$(Get-Date -Format 'yyyyMMddHHmmss')" | ConvertFrom-Json
 
-# Set environment variables for Docker
+# Clean up existing environment variables
+Remove-Item Env:\AWS_ACCESS_KEY_ID -ErrorAction SilentlyContinue
+Remove-Item Env:\AWS_SECRET_ACCESS_KEY -ErrorAction SilentlyContinue
+Remove-Item Env:\AWS_SESSION_TOKEN -ErrorAction SilentlyContinue
+
+# Set new environment variables
 $env:AWS_ACCESS_KEY_ID = $CREDS.Credentials.AccessKeyId
 $env:AWS_SECRET_ACCESS_KEY = $CREDS.Credentials.SecretAccessKey
 $env:AWS_SESSION_TOKEN = $CREDS.Credentials.SessionToken
-$env:TF_WORKSPACE = "your-workspace-name"  # Set default or remove if using multiple workspaces
 
-# Run Terraform command with Docker
-docker compose run --rm terraform -chdir=deploy $args
+Write-Host "AWS credentials set for role: $RoleName ($ROLE_ARN)"
 
-# First make sure you have active corporate credentials in your PowerShell session
-# Then run the script with Terraform commands:
-.\run-terraform.ps1 init
-.\run-terraform.ps1 plan
+==
 
 aws configure set aws_access_key_id $env:AWS_ACCESS_KEY_ID
 aws configure set aws_secret_access_key $env:AWS_SECRET_ACCESS_KEY
