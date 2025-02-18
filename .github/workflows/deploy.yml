@@ -51,6 +51,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Assume role
+        shell: pwsh
+        run: ./bin/assume_terraform_role.ps1 ma-recipe-app-terraform-role
       - name: Set vars
         shell: pwsh
         run: |
