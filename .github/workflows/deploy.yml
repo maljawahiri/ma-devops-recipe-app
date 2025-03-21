@@ -52,10 +52,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Assume role
-        shell: pwsh
+        # shell: pwsh
         run: ./bin/assume_terraform_role.ps1 ma-recipe-app-terraform-role
       - name: Set vars
-        shell: pwsh
+        # shell: pwsh
         run: |
           if ($env:GITHUB_REF -eq 'refs/heads/prod') {
             "prod" | Out-File -FilePath .workspace
@@ -66,7 +66,7 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ vars.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        shell: pwsh
+        # shell: pwsh
         run: |
           (aws ecr get-login-password --region us-east-1) | docker login --username AWS --password-stdin ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
           docker build --compress -t ${{ vars.ECR_REPO_APP }}:$GITHUB_SHA .
@@ -80,7 +80,7 @@ jobs:
     if: always()
     steps:
       - name: Determine Deploy Workflow Status
-        shell: pwsh
+        # shell: pwsh
         run: |
           Write-Output "Evaluating job results..."
           # Initialize overall result as success
