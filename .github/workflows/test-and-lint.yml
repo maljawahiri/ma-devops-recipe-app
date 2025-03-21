@@ -118,7 +118,7 @@ jobs:
     if: always()
     steps:
       - name: Determine Workflow Status
-        # shell: pwsh
+        shell: pwsh
         run: |
           Write-Output "Evaluating job results..."
           # Initialize overall result as success
