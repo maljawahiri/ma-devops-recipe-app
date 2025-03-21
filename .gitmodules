@@ -1,3 +1,4 @@
 [submodule ".github/actions/docker-login"]
 	path = .github/actions/docker-login
 	url = https://github.com/docker/login-action.git
+  tag = v3.0.0
