@@ -311,7 +311,7 @@ free CI/CD tools:
 GitLab - open source, can be self hosted
 GitHub Pull Request == GitLab Merge Request
 
-### 07_45_overview_of_github_actions
+### 08_45_overview_of_github_actions
 
 Workflows:
 .github/workflows
@@ -368,7 +368,7 @@ if there is Terraform variable db_password we can set it via environment variabl
 * TF_VAR_django_secret_key
 <keepass:aws-ma-devops-recipe-app-django>
 
-### 07_47_add_python_checks
+### 08_47_add_python_checks
 checks.yml - workflow triggered on main branch PR events
 test-and-lint.yml - reusable workflow used by checks.yml
 Variables passed to reusable workflow need to be declared both in calling workflow as well as in called workflow
@@ -376,7 +376,7 @@ Github Actions has a marketplace. We will use:
 https://github.com/docker/login-action
 https://github.com/github/vscode-github-actions
 
-git tag 07_47_add_python_checks
+git tag 08_47_add_python_checks
 
 From your project root
 ```
@@ -390,9 +390,12 @@ git add .gitmodules .github/actions
 git commit -m "Add GitHub Actions as submodules"
 ```
 
-### 07_48_add_terraform_checks
+### 08_48_add_terraform_checks
 
-### 07_49_build_and_push_docker_images
+https://developer.hashicorp.com/terraform/cli/commands/validate
+https://developer.hashicorp.com/terraform/cli/commands/fmt
+
+### 08_49_build_and_push_docker_images
 
 https://docs.aws.amazon.com/AmazonECR/latest/userguide/docker-push-ecr-image.html
 https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/store-information-in-variables#default-environment-variables
@@ -401,4 +404,18 @@ After PR merged to main deploy workflow should be triggered.
 Next check if Docker images were created at:
 AWS Console > ECR
 
-git tag 07_49_build_and_push_docker_images
+git tag 08_49_build_and_push_docker_images
+
+### 08_50_add_terraform_apply_job
+
+https://developer.hashicorp.com/terraform/cli/commands/apply
+https://developer.hashicorp.com/terraform/cli/commands/workspace/select
+
+### 08_51_add_terraform_destroy_jobs
+
+https://developer.hashicorp.com/terraform/cli/commands/destroy
+
+git tag 08_51_add_terraform_destroy_jobs
+
+
+
