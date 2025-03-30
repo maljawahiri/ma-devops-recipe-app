@@ -146,7 +146,6 @@ create S3 bucket
 ma-devops-recipe-app-us-east-1-tf-state
 create DynnamoDB table to lock S3 file
 ma-devops-recipe-app-tf-lock
-ma-devops-recipe-app-api-tf-lock
 Partition key
 LockID
 

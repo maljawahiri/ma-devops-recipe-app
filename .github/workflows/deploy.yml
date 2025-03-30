@@ -66,9 +66,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Assume role
-        # shell: pwsh
-        run: ./bin/assume_terraform_role.ps1 ma-recipe-app-terraform-role
       - name: Set vars
         # shell: pwsh
         run: |
@@ -82,12 +79,19 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ vars.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         # shell: pwsh
+        # TODO: hardcoded region us-east-1
         run: |
-          (aws ecr get-login-password --region us-east-1) | docker login --username AWS --password-stdin ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
-          docker build --compress -t ${{ vars.ECR_REPO_APP }}:$GITHUB_SHA .
-          docker push ${{ vars.ECR_REPO_APP }}:$GITHUB_SHA
-          docker build --compress -t ${{ vars.ECR_REPO_PROXY }}:$GITHUB_SHA proxy/
-          docker push ${{ vars.ECR_REPO_PROXY }}:$GITHUB_SHA
+          $loginpwd = aws ecr get-login-password --region us-east-1
+          docker login --username AWS --password $loginpwd ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+          Write-Output "GITHUB_SHA: $env:GITHUB_SHA"
+          $appRepoTag = "${{ vars.ECR_REPO_APP }}:$env:GITHUB_SHA"
+          Write-Output "appRepoTag: $appRepoTag"
+          docker build --compress -t $appRepoTag .
+          docker push $appRepoTag
+          $proxyRepoTag = "${{ vars.ECR_REPO_PROXY }}:$env:$GITHUB_SHA"
+          Write-Output "proxyRepoTag: $proxyRepoTag"
+          docker build --compress -t $proxyRepoTag proxy/
+          docker push $proxyRepoTag
       - name: Terraform Apply
         env:
           AWS_ACCESS_KEY_ID: ${{ vars.AWS_ACCESS_KEY_ID }}
@@ -96,9 +100,12 @@ jobs:
           TF_VAR_django_secret_key: ${{ secrets.TF_VAR_DJANGO_SECRET_KEY }}
         # shell: pwsh
         run: |
-          $TF_VAR_ecr_app_image = "${{ vars.ECR_REPO_APP }}:$GITHUB_SHA"
-          $TF_VAR_ecr_proxy_image = "${{ vars.ECR_REPO_PROXY }}:$GITHUB_SHA"
+          $TF_VAR_ecr_app_image = "${{ vars.ECR_REPO_APP }}:$env:GITHUB_SHA"
+          Write-Output "TF_VAR_ecr_app_image: $TF_VAR_ecr_app_image"
+          $TF_VAR_ecr_proxy_image = "${{ vars.ECR_REPO_PROXY }}:$env:GITHUB_SHA"
+          Write-Output "TF_VAR_ecr_proxy_image: $TF_VAR_ecr_proxy_image"
           $workspace = Get-Content .workspace
+          Write-Output "workspace: $workspace"
           cd infra/
           docker compose run --rm terraform -chdir=deploy/ init
           docker compose run --rm terraform -chdir=deploy/ workspace select -or-create $workspace

@@ -91,3 +91,28 @@ resource "aws_iam_user_policy_attachment" "ecr" {
   user       = aws_iam_user.cd.name
   policy_arn = aws_iam_policy.ecr.arn
 }
+
+############################
+# Policy for IAM ListRoles #
+############################
+
+data "aws_iam_policy_document" "list_roles" {
+  statement {
+    effect = "Allow"
+    actions = [ "iam:ListRoles" ]
+    resources = ["*"]
+  }
+}
+
+# Create policy resource
+resource "aws_iam_policy" "list_roles" {
+  name        = "${aws_iam_user.cd.name}-list-roles"
+  description = "Allow user to list IAM roles"
+  policy      = data.aws_iam_policy_document.list_roles.json
+}
+
+# Attach policy to user
+resource "aws_iam_user_policy_attachment" "list_roles" {
+  user       = aws_iam_user.cd.name
+  policy_arn = aws_iam_policy.list_roles.arn
+}
